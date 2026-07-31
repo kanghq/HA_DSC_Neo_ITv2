@@ -1,0 +1,207 @@
+bypass_zone:
+  name: Bypass zone
+  description: >
+    Bypass or unbypass a single zone. The panel must be in
+    a state that allows bypassing (typically requires a user PIN
+    to be passed to the matching ConfigurationEnter command first;
+    the dsc_neo_itv2 integration handles that internally when
+    you invoke this service).
+  fields:
+    entry_id:
+      name: Config entry ID
+      description: The config_entry.entry_id of the DSC Neo integration.
+      required: true
+      example: "01HE5J3MTQB5R5MJDXXXXXX"
+      selector:
+        config_entry:
+          integration: dsc_neo_itv2
+    partition:
+      name: Partition
+      description: Partition number (1-8).
+      required: true
+      default: 1
+      example: 1
+      selector:
+        number:
+          min: 1
+          max: 8
+          mode: box
+    zone:
+      name: Zone
+      description: Zone number to bypass (1-128).
+      required: true
+      example: 5
+      selector:
+        number:
+          min: 1
+          max: 128
+          mode: box
+    bypass:
+      name: Bypass
+      description: True to bypass the zone, false to remove the bypass.
+      required: true
+      default: true
+      selector:
+        boolean:
+
+quick_exit:
+  name: Quick exit
+  description: >
+    Trigger Quick Exit on a partition (re-arm with a temporary
+    exit delay so an authorised user can step out without
+    fully disarming).
+  fields:
+    entry_id:
+      name: Config entry ID
+      description: The config_entry.entry_id of the DSC Neo integration.
+      required: true
+      selector:
+        config_entry:
+          integration: dsc_neo_itv2
+    partition:
+      name: Partition
+      description: Partition number (1-8).
+      default: 1
+      selector:
+        number:
+          min: 1
+          max: 8
+          mode: box
+
+activate_fap:
+  name: Activate FAP
+  description: >
+    Trigger a Fire, Auxiliary, or Panic alarm. Equivalent to
+    pressing the F/A/P keys on the keypad. The alarm will report
+    to the central station if configured.
+  fields:
+    entry_id:
+      name: Config entry ID
+      description: The config_entry.entry_id of the DSC Neo integration.
+      required: true
+      selector:
+        config_entry:
+          integration: dsc_neo_itv2
+    partition:
+      name: Partition
+      description: Partition number (1-8).
+      default: 1
+      selector:
+        number:
+          min: 1
+          max: 8
+          mode: box
+    type:
+      name: Type
+      description: Which key to simulate.
+      required: true
+      selector:
+        select:
+          options:
+            - value: fire
+              label: Fire
+            - value: auxiliary
+              label: Auxiliary (medical)
+            - value: panic
+              label: Panic (police)
+
+reload_panel_config:
+  name: Reload panel config
+  description: >
+    Re-read installer-mode-only data (zone definitions, partition
+    enables, labels) from the panel and update the HA cache. Briefly
+    enters installer programming mode on the panel. The keypad will
+    show "Installer Programming" for a few seconds. Use after you've
+    changed zone or partition programming on the keypad so HA can
+    learn about the change without re-installing the integration.
+  fields:
+    entry_id:
+      name: Config entry
+      description: The DSC Neo integration to refresh.
+      required: true
+      selector:
+        config_entry:
+          integration: dsc_neo_itv2
+
+sensor_reset:
+  name: Sensor reset
+  description: >
+    Reset latched alarm sensors (2-wire smoke detectors, glass-break
+    devices). Equivalent to pressing [*][7][2] at the keypad. PGM2 on
+    the panel must be programmed as "Sensor Reset" for this to have a
+    physical effect (HS2032 section [009] option [04]).
+  fields:
+    entry_id:
+      name: Config entry
+      description: The DSC Neo integration to send the reset to.
+      required: true
+      selector:
+        config_entry:
+          integration: dsc_neo_itv2
+    partition:
+      name: Partition
+      description: Partition number (1-8).
+      default: 1
+      selector:
+        number:
+          min: 1
+          max: 8
+          mode: box
+
+command_output:
+  name: Command output
+  description: >
+    Activate a panel programmable output (PGM). Equivalent to pressing
+    [*][7][N] at the keypad. The physical effect depends on how the
+    PGM is programmed (chime, door strike, garage door pulse, etc.).
+    Note: output 2 has a dedicated `sensor_reset` service which is
+    usually clearer to use.
+  fields:
+    entry_id:
+      name: Config entry
+      description: The DSC Neo integration.
+      required: true
+      selector:
+        config_entry:
+          integration: dsc_neo_itv2
+    partition:
+      name: Partition
+      description: Partition number (1-8).
+      default: 1
+      selector:
+        number:
+          min: 1
+          max: 8
+          mode: box
+    output:
+      name: Output number
+      description: Command-output number (1-4 on HS2032).
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 4
+          mode: box
+
+
+
+set_date_time:
+  name: Set panel date and time
+  description: >
+    Write a new date/time to the panel clock. The panel stores naive
+    local time; pass a datetime in your HA system's local timezone.
+    Defaults to the HA host's current time if omitted.
+  fields:
+    entry_id:
+      name: Config entry
+      description: The DSC Neo integration whose panel should be set.
+      required: true
+      selector:
+        config_entry:
+          integration: dsc_neo_itv2
+    datetime:
+      name: Date and time
+      description: Optional date/time to write. Defaults to HA's current local time.
+      required: false
+      selector:
+        datetime:

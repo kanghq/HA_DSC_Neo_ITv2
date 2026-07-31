@@ -1,0 +1,266 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "DSC Neo: listener setup",
+        "description": "Choose where Home Assistant should listen for connections from the TL280 communicator. The default port (3072) matches DSC's factory default. Use 0.0.0.0 to listen on all interfaces.",
+        "data": {
+          "host": "Bind address",
+          "port": "Port"
+        }
+      },
+      "wait": {
+        "title": "Waiting for your panel to connect",
+        "description": "Home Assistant is listening on {host}:{port}.\n\n**Now configure the TL280 communicator on the panel keypad:**\n\n1. Enter installer mode: ` * 8 [installer code] `\n2. Section `[851][425]`: enable bits 3, 4, 5\n3. Section `[851][428]`: set the IP address of this Home Assistant server\n4. Section `[851][429]`: set the port in hex (e.g. `0C00` for 3072)\n5. Exit installer mode: ` # # `\n\nThe panel will connect within a few seconds. Click **Submit** to check progress."
+      },
+      "confirm": {
+        "title": "Confirm panel connection",
+        "description": "Detected panel **{integration_id}** (encryption type {encryption_type}).\n\nEnter the Type 2 access code from section `[851][700]` (32 hex characters). Leave the default if you haven't changed it.\n\nOptionally provide a Type 1 access code, a stored user PIN that the integration will use automatically for arm/disarm actions, and the installer code so we can read which zones/partitions are enabled. If the PIN is left empty, Home Assistant will prompt for one in the UI whenever an action requires it. Without the installer code, all 32+ zone slots will appear in HA. With it, only enabled zones do.",
+        "data": {
+          "type2_key": "Type 2 access code (32 hex chars)",
+          "type1_key": "Type 1 access code (optional, 8 digits)",
+          "user_pin": "Stored user PIN (optional)",
+          "installer_code": "Installer code (default 5555, optional but recommended)"
+        }
+      },
+      "reauth_confirm": {
+        "title": "DSC Neo: re-enter access codes",
+        "description": "The panel rejected the stored credentials (reason: {reason}). Re-enter the Type 2 access code (and any other codes that changed). The integration will reconnect automatically after saving.",
+        "data": {
+          "type2_key": "Type 2 access code (32 hex chars)",
+          "type1_key": "Type 1 access code (optional, 8 digits)",
+          "user_pin": "Stored user PIN (optional)",
+          "installer_code": "Installer code (default 5555, optional)"
+        }
+      }
+    },
+    "error": {
+      "invalid_port": "Port must be between 1 and 65535.",
+      "invalid_type2_key": "Type 2 access code must be exactly 32 hexadecimal characters.",
+      "invalid_type1_key": "Type 1 access code must be exactly 8 digits.",
+      "invalid_user_pin": "User PIN must be 4-6 digits.",
+      "invalid_installer_code": "Installer code must be 4-6 digits.",
+      "port_in_use": "This port is already in use by another service on this host. Pick a different port or stop the conflicting service.",
+      "host_unavailable": "This bind address is not assigned to any interface on this host. Use 0.0.0.0 to listen on all interfaces.",
+      "bind_denied": "Home Assistant doesn't have permission to bind this port (usually 1-1023). Pick a port above 1023.",
+      "bind_failed": "Could not bind to the chosen address/port. Check the Home Assistant logs for details."
+    },
+    "abort": {
+      "already_configured": "This panel (Integration ID) is already configured in Home Assistant.",
+      "timeout_no_panel": "Timed out waiting for the panel to connect. Verify the TL280 programming and try again.",
+      "bind_failed": "Could not bind to the chosen port. It may already be in use by another service.",
+      "probe_failed": "An unexpected error occurred while waiting for the panel. Check the Home Assistant logs.",
+      "no_integration_id": "The panel connected but didn't announce an Integration ID. Verify the TL280 firmware version and section [851][422].",
+      "reconfigure_panel_changed": "The connecting panel has a different Integration ID than the one being reconfigured. Add a new integration entry instead.",
+      "reconfigure_successful": "Reconfiguration complete. The integration has been reloaded with the new settings.",
+      "reauth_successful": "Credentials updated. The integration has been reloaded."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "DSC Neo - update access codes",
+        "description": "Edit the access codes for this panel. Leave any field unchanged to keep its current value.\n\n* **Type 2 key** - 32-character hex from section [851][700].\n* **Type 1 key** - 8-digit code, only used if your panel is configured for Type 1 encryption.\n* **User PIN** - if set, used automatically for arm/disarm; if blank, HA prompts each time.\n* **Installer code** - enables \"Reload panel config\" so HA can read which zones/partitions are enabled. Default is `5555`.\n\nSaving will reload the integration.",
+        "data": {
+          "type2_key": "Type 2 access code (32 hex chars)",
+          "type1_key": "Type 1 access code (optional, 8 digits)",
+          "user_pin": "Stored user PIN (optional)",
+          "installer_code": "Installer code (default 5555, optional)"
+        }
+      }
+    },
+    "error": {
+      "invalid_type2_key": "Type 2 access code must be exactly 32 hexadecimal characters.",
+      "invalid_type1_key": "Type 1 access code must be exactly 8 digits.",
+      "invalid_user_pin": "User PIN must be 4-6 digits.",
+      "invalid_installer_code": "Installer code must be 4-6 digits."
+    }
+  },
+  "services": {
+    "bypass_zone": {
+      "name": "Bypass zone",
+      "description": "Bypass or restore a single zone.",
+      "fields": {
+        "entry_id": {
+          "name": "Config entry",
+          "description": "The DSC Neo integration to send the command to."
+        },
+        "partition": {
+          "name": "Partition",
+          "description": "Partition that contains the zone."
+        },
+        "zone": {
+          "name": "Zone",
+          "description": "Zone number (1-128)."
+        },
+        "bypass": {
+          "name": "Bypass",
+          "description": "On = bypass (exclude from monitoring). Off = restore."
+        }
+      }
+    },
+    "quick_exit": {
+      "name": "Quick exit",
+      "description": "Re-arm a partition with a temporary exit delay so an authorised user can leave without disarming.",
+      "fields": {
+        "entry_id": {
+          "name": "Config entry",
+          "description": "The DSC Neo integration to send the command to."
+        },
+        "partition": {
+          "name": "Partition",
+          "description": "Partition to run Quick Exit on."
+        }
+      }
+    },
+    "activate_fap": {
+      "name": "Activate FAP",
+      "description": "Trigger a Fire, Auxiliary, or Panic alarm (equivalent to pressing F/A/P on the keypad). Reports to the central station if configured.",
+      "fields": {
+        "entry_id": {
+          "name": "Config entry",
+          "description": "The DSC Neo integration to send the command to."
+        },
+        "partition": {
+          "name": "Partition",
+          "description": "Partition to fire the alarm on."
+        },
+        "type": {
+          "name": "Type",
+          "description": "Which key to simulate."
+        }
+      }
+    },
+    "reload_panel_config": {
+      "name": "Reload panel config",
+      "description": "Re-read installer-mode-only data (zone definitions, partition enables, labels) from the panel and update the cache. Briefly enters installer programming mode on the panel.",
+      "fields": {
+        "entry_id": { "name": "Config entry", "description": "The DSC Neo integration to refresh." }
+      }
+    },
+    "sensor_reset": {
+      "name": "Sensor reset",
+      "description": "Reset latched alarm sensors (2-wire smoke detectors, glass-break devices). Equivalent to [*][7][2] at the keypad.",
+      "fields": {
+        "entry_id": { "name": "Config entry", "description": "The DSC Neo integration." },
+        "partition": { "name": "Partition", "description": "Partition number (1-8)." }
+      }
+    },
+    "command_output": {
+      "name": "Command output",
+      "description": "Activate a panel programmable output (PGM). Equivalent to [*][7][N] at the keypad.",
+      "fields": {
+        "entry_id": { "name": "Config entry", "description": "The DSC Neo integration." },
+        "partition": { "name": "Partition", "description": "Partition number (1-8)." },
+        "output": { "name": "Output number", "description": "Command-output number (1-4)." }
+      }
+    },
+    "set_date_time": {
+      "name": "Set panel date and time",
+      "description": "Write a new date/time to the panel clock. Defaults to HA's current local time if omitted.",
+      "fields": {
+        "entry_id": { "name": "Config entry", "description": "The DSC Neo integration." },
+        "datetime": { "name": "Date and time", "description": "Optional date/time to write." }
+      }
+    }
+  },
+  "issues": {
+    "trouble_communications": {
+      "title": "DSC Neo: Communications trouble",
+      "description": "The panel is reporting a Communications trouble (Trouble 11 - typically TLM, FTC, Cellular, or Ethernet). Check the relevant communicator path; see the panel's `[*][2]` menu for the specific sub-item."
+    },
+    "trouble_ac_loss": {
+      "title": "DSC Neo: AC power loss",
+      "description": "The panel is reporting AC trouble (Trouble 04). The panel is running on battery. Check the panel transformer and household power."
+    },
+    "trouble_battery": {
+      "title": "DSC Neo: Low / missing battery",
+      "description": "The panel is reporting a Battery trouble (Trouble 02). The backup battery is low, missing, or one of the auxiliary supplies has a battery fault."
+    },
+    "trouble_service_required": {
+      "title": "DSC Neo: Service required",
+      "description": "The panel is reporting Service Required (Trouble 01) - typically a bell-circuit, RF-jam, aux-supply, output, or loss-of-clock condition. Check the panel's `[*][2]` menu for the specific sub-item."
+    },
+    "auth_failed": {
+      "title": "DSC Neo: Authentication failed",
+      "description": "Home Assistant could not authenticate to the panel. This usually means the configured Type 2 access code does not match section `[851][700]` on the panel, or the panel rejected our handshake. Update the access code via the integration's options (gear icon) and the connection will retry automatically.\n\nDetails: {reason}"
+    }
+  },
+  "entity": {
+    "alarm_control_panel": {
+      "partition": {
+        "state_attributes": {
+          "is_ready": { "name": "Ready" },
+          "is_alarm_in_memory": { "name": "Alarm in memory" },
+          "is_trouble": { "name": "Trouble present" },
+          "is_bypassed": { "name": "Zones bypassed" },
+          "exit_delay_seconds": { "name": "Exit delay (s)" },
+          "entry_delay_seconds": { "name": "Entry delay (s)" },
+          "last_user_id": { "name": "Last user" }
+        }
+      }
+    },
+    "binary_sensor": {
+      "panel_connection": {
+        "name": "Panel connection"
+      },
+      "system_trouble": {
+        "name": "System trouble"
+      },
+      "trouble_group": {
+        "name": "Trouble: {group}"
+      }
+    },
+    "sensor": {
+      "firmware":         { "name": "Communicator firmware" },
+      "panel_time":       { "name": "Panel time" },
+      "open_zones":       { "name": "Open zones" },
+      "bypassed_zones":   { "name": "Bypassed zones" },
+      "connection_state": {
+        "name": "Connection state",
+        "state": {
+          "connected":    "Connected",
+          "disconnected": "Disconnected",
+          "handshaking":  "Handshaking",
+          "failed":       "Failed"
+        }
+      },
+      "fire_status": {
+        "name": "Fire status",
+        "state": {
+          "ok":        "OK",
+          "trouble":   "Trouble",
+          "pre_alert": "Pre-alert",
+          "alarm":     "Alarm"
+        }
+      },
+      "burglary_status": {
+        "name": "Burglary status",
+        "state": {
+          "disarmed":    "Disarmed",
+          "not_ready":   "Not ready",
+          "ready":       "Ready to arm",
+          "exit_delay":  "Exit delay",
+          "armed":       "Armed",
+          "entry_delay": "Entry delay",
+          "alarm":       "Alarm"
+        }
+      },
+      "system_status": {
+        "name": "System status",
+        "state": {
+          "ok":      "OK",
+          "armed":   "Armed",
+          "trouble": "Trouble",
+          "alarm":   "Alarm"
+        }
+      }
+    },
+    "switch": {
+      "zone_bypass": { "name": "Bypass" }
+    },
+    "button": {
+      "reload_panel_config": { "name": "Reload panel config" }
+    }
+  }
+}

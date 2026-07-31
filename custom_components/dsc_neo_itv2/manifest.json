@@ -1,0 +1,13 @@
+{
+  "domain": "dsc_neo_itv2",
+  "name": "DSC PowerSeries Neo (ITv2)",
+  "codeowners": ["@LawPaul"],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/LawPaul/HA_DSC_Neo_ITv2",
+  "integration_type": "device",
+  "iot_class": "local_push",
+  "issue_tracker": "https://github.com/LawPaul/HA_DSC_Neo_ITv2/issues",
+  "requirements": ["pycryptodome>=3.20"],
+  "version": "1.0.0"
+}

@@ -1,0 +1,35 @@
+target-version = "py312"
+line-length = 100
+
+[lint]
+select = [
+  "E",   # pycodestyle errors
+  "F",   # pyflakes
+  "W",   # pycodestyle warnings
+  "I",   # isort
+  "UP",  # pyupgrade
+  "B",   # flake8-bugbear
+  "C4",  # flake8-comprehensions
+  "SIM", # flake8-simplify
+  "RUF",
+]
+ignore = [
+  "E501",   # line length is handled by the formatter
+  "E702",   # paired `out.append(...); out.append(...)` in the byte-stuffing loops
+  "E731",   # lambda assignment (compact decoder tables)
+  "B008",   # function call in default argument (voluptuous schemas)
+  "RUF012", # mutable class attrs need ClassVar (noisy for HA entity classes)
+  "SIM102", # nested `if`s are often clearer in the status-decoding branches
+  "SIM105", # explicit try/except/pass documents *why* the error is ignored
+]
+
+[lint.per-file-ignores]
+"tests/*" = ["S101"]
+# The explicit branches document two distinct reasons a zone is not bypassable.
+"custom_components/dsc_neo_itv2/switch.py" = ["SIM103"]
+# Keyword form mirrors the surrounding decoder table.
+"custom_components/dsc_neo_itv2/dsc_itv2/messages.py" = ["C408"]
+
+[lint.isort]
+known-first-party = ["custom_components"]
+force-sort-within-sections = true

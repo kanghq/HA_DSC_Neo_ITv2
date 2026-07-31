@@ -1,0 +1,86 @@
+{
+  "entity": {
+    "alarm_control_panel": {
+      "partition": {
+        "default": "mdi:shield-home"
+      }
+    },
+    "binary_sensor": {
+      "panel_connection":         { "default": "mdi:lan-connect" },
+      "system_trouble":           { "default": "mdi:alert-circle-outline" },
+      "trouble_group":            { "default": "mdi:alert-outline" },
+      "partition_alarm":          { "default": "mdi:shield-alert" },
+      "partition_fire_alarm":     { "default": "mdi:fire" },
+      "partition_burglary_alarm": { "default": "mdi:shield-account" },
+      "partition_fire_pre_alert": { "default": "mdi:fire-alert" },
+      "partition_alarm_in_memory":{ "default": "mdi:history" },
+      "partition_exit_delay":     { "default": "mdi:run-fast" },
+      "partition_entry_delay":    { "default": "mdi:timer-sand" },
+      "partition_ready":          { "default": "mdi:shield-check" },
+      "partition_chime":          { "default": "mdi:bell-ring-outline" },
+      "partition_programming":    { "default": "mdi:cog-outline" }
+    },
+    "sensor": {
+      "firmware":         { "default": "mdi:chip" },
+      "connection_state": {
+        "default": "mdi:lan",
+        "state": {
+          "connected":    "mdi:lan-connect",
+          "disconnected": "mdi:lan-disconnect",
+          "handshaking":  "mdi:lan-pending",
+          "failed":       "mdi:lan-disconnect"
+        }
+      },
+      "panel_time":       { "default": "mdi:clock-outline" },
+      "open_zones":       { "default": "mdi:door-open" },
+      "bypassed_zones":   { "default": "mdi:shield-off-outline" },
+      "fire_status": {
+        "default": "mdi:fire",
+        "state": {
+          "ok":        "mdi:check-circle-outline",
+          "trouble":   "mdi:alert-outline",
+          "pre_alert": "mdi:fire-alert",
+          "alarm":     "mdi:fire"
+        }
+      },
+      "burglary_status": {
+        "default": "mdi:shield-home",
+        "state": {
+          "disarmed":    "mdi:shield-off-outline",
+          "not_ready":   "mdi:shield-alert-outline",
+          "ready":       "mdi:shield-check",
+          "exit_delay":  "mdi:run-fast",
+          "armed":       "mdi:shield-lock",
+          "entry_delay": "mdi:timer-sand",
+          "alarm":       "mdi:shield-alert"
+        }
+      },
+      "system_status": {
+        "default": "mdi:shield-check-outline",
+        "state": {
+          "ok":      "mdi:check-circle-outline",
+          "armed":   "mdi:shield-lock",
+          "trouble": "mdi:alert-circle-outline",
+          "alarm":   "mdi:shield-alert"
+        }
+      }
+    },
+    "switch": {
+      "zone_bypass": { "default": "mdi:shield-off-outline" }
+    },
+    "button": {
+      "reload_panel_config": { "default": "mdi:refresh" },
+      "sensor_reset":        { "default": "mdi:smoke-detector-variant" },
+      "command_output":      { "default": "mdi:electric-switch" }
+    }
+  },
+  "services": {
+    "bypass_zone":          { "service": "mdi:shield-off-outline" },
+    "quick_exit":           { "service": "mdi:run" },
+    "activate_fap":         { "service": "mdi:alarm-light" },
+    "reload_panel_config":  { "service": "mdi:refresh" },
+    "sensor_reset":         { "service": "mdi:smoke-detector-variant" },
+    "command_output":       { "service": "mdi:electric-switch" },
+    "set_date_time":        { "service": "mdi:clock-edit-outline" }
+  }
+}

@@ -1,0 +1,12 @@
+# Runtime dependency of the integration itself
+pycryptodome>=3.20
+
+# Test tooling
+pytest>=8.0
+pytest-asyncio>=0.23
+pytest-cov>=5.0
+
+# Home Assistant test harness. Pin to a release matching the HA version
+# declared in hacs.json / the CI matrix. Protocol-layer tests under
+# tests/protocol/ run without this package installed.
+pytest-homeassistant-custom-component

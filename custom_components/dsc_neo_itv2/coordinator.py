@@ -102,6 +102,9 @@ from .zone_definitions import is_fire_zone
 
 _LOGGER = logging.getLogger(__name__)
 
+HANDSHAKE_TIMEOUT = 30  # s; stray connections that never handshake are closed
+CLOSE_TIMEOUT = 5  # s; never let one connection block shutdown
+
 
 @dataclass
 class ZoneState:
@@ -1135,8 +1138,35 @@ class DscNeoCoordinator:
         except Exception:  # pragma: no cover (defensive)
             _LOGGER.exception("DSC accept loop crashed")
 
+    def _has_healthy_session(self, other_than: ITv2Connection | None = None) -> bool:
+        """True while an established panel session (other than ``other_than``) is open."""
+        active = self._active_conn
+        return active is not None and active is not other_than and active.is_open
+
+    async def _handshake_watchdog(self, conn: ITv2Connection) -> None:
+        """Close connections that never complete the ITv2 handshake (port scans,
+        stray clients) so they cannot linger or block shutdown."""
+        await asyncio.sleep(HANDSHAKE_TIMEOUT)
+        if self._active_conn is not conn and conn.is_open:
+            _LOGGER.warning(
+                "Closing connection from %s: no ITv2 handshake within %ss",
+                conn.peer_addr[0], HANDSHAKE_TIMEOUT,
+            )
+            with contextlib.suppress(Exception):
+                await asyncio.wait_for(conn.close(), timeout=CLOSE_TIMEOUT)
+
     async def _handle_connection(self, conn: ITv2Connection) -> None:
-        self._update_connection_state(CONN_STATE_HANDSHAKING)
+        # A second connection (port scan, stray client, panel reconnect in
+        # progress) must not mark a healthy panel session as handshaking.
+        if not self._has_healthy_session(other_than=conn):
+            self._update_connection_state(CONN_STATE_HANDSHAKING)
+        else:
+            _LOGGER.debug(
+                "Extra connection from %s while a panel session is active", conn.peer_addr[0],
+            )
+        self._spawn(
+            self._handshake_watchdog(conn), name=f"dsc-handshake-{conn.peer_addr[0]}",
+        )
         try:
             async for event in conn.events():
                 self._dispatch_event(conn, event)
@@ -1182,6 +1212,14 @@ class DscNeoCoordinator:
             self._spawn(
                 self._initial_state_pull(conn),
                 name=f"dsc-pull-{conn.peer_addr[0]}",
+            )
+            return
+        if isinstance(event, (Closed, Failed)) and self._has_healthy_session(other_than=conn):
+            # Ignore the end of a non-active connection while the real panel
+            # session is healthy (e.g. a port scan sending garbage).
+            _LOGGER.info(
+                "Ignoring %s from non-active connection %s (panel session healthy)",
+                type(event).__name__, conn.peer_addr[0],
             )
             return
         if isinstance(event, Closed):

@@ -49,6 +49,8 @@ return a single fixed :class:`ConnectionSettings`.
 """
 
 _READ_CHUNK = 4096
+_CLOSE_SEND_TIMEOUT = 3.0  # s, sending End_Session / waiting for the pump on close
+_STOP_CLOSE_TIMEOUT = 5.0  # s, per connection when the server stops
 _SENTINEL_END: object = object()
 
 
@@ -123,15 +125,22 @@ class ITv2Connection:
         try:
             wire = self._codec.close()
             if wire:
-                async with self._write_lock:
-                    with contextlib.suppress(ConnectionError, OSError):
-                        self._writer.write(wire)
-                        await self._writer.drain()
+                # Bounded: a peer that never reads (or a pump stuck holding the
+                # write lock) must not make close() hang forever.
+                with contextlib.suppress(ConnectionError, OSError, asyncio.TimeoutError):
+                    await asyncio.wait_for(self._send_raw(wire), timeout=_CLOSE_SEND_TIMEOUT)
         finally:
             await self._teardown()
             if self._pump_task is not None:
-                with contextlib.suppress(asyncio.CancelledError):
-                    await self._pump_task
+                with contextlib.suppress(asyncio.CancelledError, asyncio.TimeoutError):
+                    await asyncio.wait_for(self._pump_task, timeout=_CLOSE_SEND_TIMEOUT)
+                if not self._pump_task.done():
+                    self._pump_task.cancel()
+
+    async def _send_raw(self, wire: bytes) -> None:
+        async with self._write_lock:
+            self._writer.write(wire)
+            await self._writer.drain()
 
     # ---- internal ----
 
@@ -260,7 +269,7 @@ class ITv2Server:
         live = list(self._connections)
         for conn in live:
             with contextlib.suppress(Exception):
-                await conn.close()
+                await asyncio.wait_for(conn.close(), timeout=_STOP_CLOSE_TIMEOUT)
         self._connections.clear()
         _LOGGER.info("ITv2 server stopped")
 
